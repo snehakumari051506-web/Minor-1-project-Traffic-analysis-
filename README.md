@@ -1,46 +1,53 @@
-# Minor-1-project-Traffic-analysis-
-This is about traffic analysis 
-# 🚦 City Road Traffic Density Analysis
-**A Data-Driven Approach to Urban Congestion Trends**
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from datetime import datetime, timedelta
 
-## 📖 Project Overview
-This project focuses on analyzing traffic density across various city road segments. The goal is to move beyond simple data observation and identify meaningful **congestion trends** using Python. By calculating traffic density and correlating it with average vehicle speeds, the model identifies "Hotspots" and peak congestion windows.
+# 1. Generate Synthetic Traffic Data
+np.random.seed(42)
 
-### Key Objectives:
-* **EDA (Exploratory Data Analysis):** Understand the distribution of traffic volume.
-* **Trend Identification:** Analyze how traffic "breathes" throughout the day.
-* **Visual Intelligence:** Use Heatmaps and Line Plots to make complex data actionable for urban planners.
+dates = pd.date_range(start="2025-01-01", periods=168, freq="H")  # 1 week of hourly data
+junctions = ['Junction_A', 'Junction_B']
 
----
+data = []
+for junction in junctions:
+    for date in dates:
+        # Simulate peak hours (morning 8-10, evening 17-19)
+        base_traffic = np.random.randint(10, 50)
+        hour = date.hour
+        if 7 <= hour <= 9 or 16 <= hour <= 18:
+            base_traffic += np.random.randint(40, 100)
+        data.append([date, junction, base_traffic])
 
-## 🛠️ Tech Stack
-* **Language:** Python
-* **Analysis:** Pandas, NumPy
-* **Visuals:** Seaborn, Matplotlib
+df = pd.DataFrame(data, columns=['DateTime', 'Junction', 'VehicleCount'])
 
----
+# 2. Preprocessing
 
-## 📊 Key Features & Visualizations
+df['Hour'] = df['DateTime'].dt.hour
+df['Day'] = df['DateTime'].dt.day_name()
 
-### 1. Hourly Traffic Density (Line Plots)
-We analyze the 'Double Peak' phenomenon. This visualization compares weekday morning and evening rush hours against weekend patterns.
-[attachment_0](attachment)
+# 3. Visualization - Line Plot (Trends over time)
+plt.figure(figsize=(12, 5))
+sns.lineplot(data=df, x='DateTime', y='VehicleCount', hue='Junction')
+plt.title('Traffic Volume Trends Over One Week')
+plt.xticks(rotation=45)
+plt.show()
 
-### 2. Congestion Hotspot Mapping (Heatmaps)
-The heatmap provides a spatial-temporal view of the city. By plotting `Road Segment` against `Hour of Day`, we can instantly see which streets are "in the red."
-[attachment_1](attachment)
+# 4. Visualization - Heatmap (Hourly Density)
 
-### 3. Traffic Density Logic
-The model calculates density using the formula:
-$$Density = \frac{Vehicle Count}{Road Length}$$
-It further identifies a "Congestion State" when average speed drops below a specific threshold relative to the segment's speed limit.
+# Pivot data for heatmap (Average vehicles per hour per day)
+pivot_df = df.pivot_table(values='VehicleCount', index='Day', columns='Hour', aggfunc='mean')
+# Reorder days for logical flow
+days_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+pivot_df = pivot_df.reindex(days_order)
 
----
 
-## 📂 Repository Structure
-```text
-├── data/                   # Dataset (Synthetic/Real)
-├── traffic_analysis.py     # Main Python script 
-├── requirements.txt        # Dependencies
-├── README.md               # Project Documentation
-└── plots/                  # Generated Heatmaps and Line plots
+
+plt.figure(figsize=(14, 6))
+sns.heatmap(pivot_df, annot=True, fmt=".0f", cmap="YlGnBu", cbar_kws={'label': 'Avg Vehicles'})
+plt.title('Hourly Traffic Density Heatmap (Average Vehicles)')
+plt.xlabel('Hour of Day')
+plt.ylabel('Day of Week')
+plt.show()
+
